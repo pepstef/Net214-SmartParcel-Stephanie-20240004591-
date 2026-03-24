@@ -70,6 +70,46 @@ def create_parcel():
             "error": "Server error",
             "details": str(e)
         }), 500
- 
+
+#GET Parcel
+@app.route("/api/parcels/<parcel_id>", methods = ["GET"])
+def get_parcel(parcel_id):
+    user = get_user()
+	
+    if not user:
+        return jsonify({"error": "unauthorized access"}), 401
+   
+    try:
+        response = table.get_item(Key={"parcel_id": parcel_id})
+
+        if "Item" not in response:
+            return jsonify({"error": "Parcel not found"}), 404
+
+        return jsonify(response["Item"]), 200
+
+    except Exception as e:
+        return jsonify({
+            "error": "Server error",
+            "details": str(e)
+        }), 500
+
+#Update Parcel Status
+@app.route("/api/parcels/<parcel_id>/status", methods = ["PUT"])
+def update_parcel(parcel_id):
+	user = get_user()
+	if user != "driver":
+		return jsonify({"error":"Unauthorized access"}), 403
+
+	if not request.is_json:	
+		return jsonify({"error": "Request must be JSON"}), 400
+	data = request.get_json()
+
+	status = data.get("status")
+	parcel_status = ["picked_up", "in_transit", "delivered"]
+	
+	if not status or status not in parcel_status:
+		return jsonify({"error": "Invalid status"}),404
+
+
 if __name__ == "__main__":
      app.run(host="0.0.0.0",port=8080)
