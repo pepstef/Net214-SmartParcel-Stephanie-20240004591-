@@ -33,7 +33,6 @@ def current_time():
 def health():
     return jsonify({"status": "healthy", "hostname": socket.gethostname()}), 200
 
-
 #POST: CREATE PARCEL 
 @app.route("/api/parcels", methods =["POST"])
 def create_parcel():
