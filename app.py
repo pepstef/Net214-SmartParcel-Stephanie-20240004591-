@@ -49,6 +49,9 @@ def create_parcel():
     if "sender" not in data or "receiver" not in data or "address" not in data:
         return jsonify({"error": "Missing fields"}), 400
 
+    if len(data["sender"]) > 60 or len(data["reciever"]) > 60 or len(data["address"]) > 100:
+         return "Error: Too Long"
+
     parcel_id = str(uuid.uuid4())
 
     item = {
