@@ -44,7 +44,7 @@ def create_parcel():
     if not request.is_json:
         return jsonify({"error": "Request must be JSON"}), 400
 
-    data = request.get_json()
+    data = request.get_json()    
 
     if "sender" not in data or "receiver" not in data or "address" not in data:
         return jsonify({"error": "Missing fields"}), 400
@@ -68,7 +68,7 @@ def create_parcel():
 
     except Exception as e:
         return jsonify({
-            "error": "Server error",
+            "error": "ERROR",
             "details": str(e)
         }), 500
 
