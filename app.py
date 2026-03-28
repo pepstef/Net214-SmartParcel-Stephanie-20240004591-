@@ -18,8 +18,7 @@ dynamodb = boto3.resource("dynamodb", region_name="ap-southeast-2")
 table = dynamodb.Table("smartparcel-parcels")
 
 s3 = boto3.client("s3")
-BUCKET_NAME = "smartparcel-photos-20240004591"
-
+BUCKET_NAME = 'smartparcel-photos-20240004591'
 
 #User-Authentication
 def get_user():
@@ -59,7 +58,7 @@ def create_parcel():
         "sender": data["sender"], 
         "receiver": data["receiver"],
         "address": data["address"],
-	"status": "parcel has been created",
+	"status": "created",
     }
 
     try:
@@ -192,11 +191,16 @@ def upload_parcel(parcel_id):
 
      if user != "driver":
           return jsonify({"error": "unauthorized access"}), 401
-     
-     photo = request.files["photo"]
+    
 
      if "photo" not in request.files:
           return jsonify({"error": "There's no photo uploaded"}), 400
+
+     photo = request.files["photo"]
+
+     if "photo" != endswith('.jpg'):
+          return "error: Wrong Format"
+
 
 if __name__ == "__main__":
      app.run(host="0.0.0.0",port=8080)
