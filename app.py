@@ -11,7 +11,7 @@ import boto3
 import uuid 
 from datetime import datetime 
 import socket 
-import json 
+
 
 app = Flask(__name__)
 
@@ -31,16 +31,16 @@ def get_user():
 def current_time():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-def notify_status_change(parcel_id, new_status, customer_email);
+def notify_status_change(parcel_id, new_status, customer_email):
 	message = {
 		'parcel_id' : parcel_id,
 		'new_status' : new_status,
 		'customer_email' : customer_email,
-		'driver_name' = get_user()
+		'driver_name' : get_user()
 		}
 
 	sqs.send_message(
-		QueueURL=Queue_URL,
+		QueueUrl=QUEUE_URL,
 		MessageBody=json.dumps(message)
 		)
 
@@ -65,8 +65,8 @@ def create_parcel():
     if "sender" not in data or "receiver" not in data or "address" not in data:
         return jsonify({"error": "Missing fields"}), 400
 
-    if len(data["sender"]) > 60 or len(data["reciever"]) > 60 or len(data["address"]) > 100:
-         return "Error: Too Long"
+    if len(data["sender"]) > 60 or len(data["receiver"]) > 60 or len(data["address"]) > 100:
+         return jsonify({"Error:Input Too Long"}),400
 
     parcel_id = str(uuid.uuid4())
 
