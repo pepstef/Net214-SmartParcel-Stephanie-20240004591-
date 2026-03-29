@@ -11,6 +11,7 @@ import boto3
 import uuid 
 from datetime import datetime 
 import socket 
+import json 
 
 app = Flask(__name__)
 
@@ -20,12 +21,28 @@ table = dynamodb.Table("smartparcel-parcels")
 s3 = boto3.client("s3")
 BUCKET_NAME = 'smartparcel-photos-20240004591'
 
+sqs = boto3.client("sqs", region_name = "ap-southeast-2")
+QUEUE_URL = 'https://sqs.ap-southeast-2.amazonaws.com/943273444306/smartparcel-notifications-20240004591'
+
 #User-Authentication
 def get_user():
     return request.headers.get("User")
 
 def current_time():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+def notify_status_change(parcel_id, new_status, customer_email);
+	message = {
+		'parcel_id' : parcel_id,
+		'new_status' : new_status,
+		'customer_email' : customer_email,
+		'driver_name' = get_user()
+		}
+
+	sqs.send_message(
+		QueueURL=Queue_URL,
+		MessageBody=json.dumps(message)
+		)
 
 #HealthCheck
 @app.route("/health", methods=["GET"])
@@ -125,9 +142,11 @@ def update_parcel(parcel_id):
 			ExpressionAttributeNames={"#s": "status"},
 			ExpressionAttributeValues={":s": status}
 			)
-		
+		customer_email = data.get('customer_email')
+		notify_status_change(parcel_id, status, customer_email)		
+
 		return jsonify({
-			"The parcel status has been updated to: ": status
+			"Parcel status updated to ": status
 			}),200
 
 	except Exception as e:
