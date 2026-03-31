@@ -11,7 +11,7 @@ import boto3
 import uuid 
 from datetime import datetime 
 import socket 
-
+import json
 
 app = Flask(__name__)
 
@@ -32,17 +32,21 @@ def current_time():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 def notify_status_change(parcel_id, new_status, customer_email):
+
 	message = {
 		'parcel_id' : parcel_id,
 		'new_status' : new_status,
 		'customer_email' : customer_email,
-		'driver_name' : get_user()
+		'driver_name' : get_user(),
+		'timestamp': datetime.utcnow().isoformat() + "Z"
 		}
-
-	sqs.send_message(
+		
+	response = sqs.send_message(
 		QueueUrl=QUEUE_URL,
 		MessageBody=json.dumps(message)
-		)
+	)
+
+	print("Response:", response)
 
 #HealthCheck
 @app.route("/health", methods=["GET"])
@@ -66,7 +70,7 @@ def create_parcel():
         return jsonify({"error": "Missing fields"}), 400
 
     if len(data["sender"]) > 60 or len(data["receiver"]) > 60 or len(data["address"]) > 100:
-         return jsonify({"Error:Input Too Long"}),400
+         return jsonify({"Error": "Input Too Long"}),400
 
     parcel_id = str(uuid.uuid4())
 
@@ -117,19 +121,23 @@ def get_parcel(parcel_id):
 @app.route("/api/parcels/<parcel_id>/status", methods = ["PUT"])
 def update_parcel(parcel_id):
 	user = get_user()
+
 	if user != "driver":
 		return jsonify({"error":"Unauthorized access"}), 403
 
 	if not request.is_json:	
 		return jsonify({"error": "Request must be JSON"}), 400
+	
 	data = request.get_json()
 
 	status = data.get("status")
 	parcel_status = ["picked_up", "in_transit", "delivered"]
 	
 	if not status or status not in parcel_status:
-		return jsonify({"error": "Invalid status"}),404
-
+		return jsonify({"error": "Invalid status"}),400
+	
+	if not customer_email:
+		return jsonify({"error": "customer_email needed"}),400
 	try:
 		exists  = table.get_item(Key={"parcel_id": parcel_id})
 	
@@ -163,7 +171,6 @@ def list_parcels():
 	if user != "admin":
 		return jsonify({"error": "unauthorized access"}),401
 	
-	status_filer = request.args.get("status")
 	try:
 		exists = table.scan()
 		items= exists["Items"]
@@ -217,8 +224,8 @@ def upload_parcel(parcel_id):
 
      photo = request.files["photo"]
 
-     if "photo" != endswith('.jpg'):
-          return "error: Wrong Format"
+     if not photo.filename.endswith('.jpg'):
+          return jsonify({"Error": "Wrong Format, .jpg allowed"}), 400
 
 
 if __name__ == "__main__":
