@@ -6,7 +6,7 @@ BASE_URL = 'http://13.211.163.76:8080/api'
 
 def make_request(i):
     start = time.time()
-    resp = requests.get(f'{BASE_URL}/parcels')
+    resp = requests.get(f'{BASE_URL}/parcels',headers=headers,timeout=5)
     elapsed = time.time() - start
     return {'id': i, 'status': resp.status_code, 'time': round(elapsed, 3)}
 
