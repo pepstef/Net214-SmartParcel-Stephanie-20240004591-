@@ -32,21 +32,20 @@ def current_time():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 def notify_status_change(parcel_id, new_status, customer_email):
+    message = {
+        'parcel_id': parcel_id,
+        'new_status': new_status,
+        'customer_email': customer_email,
+        'driver_name': get_user(),
+        'timestamp': datetime.utcnow().isoformat() + "Z"
+    }
 
-	message = {
-		'parcel_id' : parcel_id,
-		'new_status' : new_status,
-		'customer_email' : customer_email,
-		'driver_name' : get_user(),
-		'timestamp': datetime.utcnow().isoformat() + "Z"
-		}
-		
-	response = sqs.send_message(
-		QueueUrl=QUEUE_URL,
-		MessageBody=json.dumps(message)
-	)
+    response = sqs.send_message(
+        QueueUrl=QUEUE_URL,
+        MessageBody=json.dumps(message)
+    )
 
-	print("Response:", response)
+    print("Response:", response)
 
 #HealthCheck
 @app.route("/health", methods=["GET"])
@@ -131,6 +130,8 @@ def update_parcel(parcel_id):
 	data = request.get_json()
 
 	status = data.get("status")
+	customer_email = data.get("customer_email")	
+
 	parcel_status = ["picked_up", "in_transit", "delivered"]
 	
 	if not status or status not in parcel_status:
@@ -229,4 +230,4 @@ def upload_parcel(parcel_id):
 
 
 if __name__ == "__main__":
-     app.run(host="0.0.0.0",port=8080)
+     app.run(host="0.0.0.0",port=8080, threaded=True)
