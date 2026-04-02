@@ -214,20 +214,51 @@ def delete_parcel(parcel_id):
 #POST UPLOAD PHOTO
 @app.route("/api/parcels/<parcel_id>/photo", methods=["POST"])
 def upload_parcel(parcel_id):
-     user = get_user()
+    user = get_user()
 
-     if user != "driver":
-          return jsonify({"error": "unauthorized access"}), 401
-    
+    if user != "driver":
+        return jsonify({"error": "unauthorized access"}), 401 
+    if "photo" not in request.files:
+        return jsonify({"error": "There's no photo uploaded"}), 400
 
-     if "photo" not in request.files:
-          return jsonify({"error": "There's no photo uploaded"}), 400
+    photo = request.files["photo"]
 
-     photo = request.files["photo"]
+    if photo.filename == "":
+        return jsonify({"error": "No selected file"}), 400
 
-     if not photo.filename.endswith('.jpg'):
-          return jsonify({"Error": "Wrong Format, .jpg allowed"}), 400
+    if not photo.filename.endswith('.jpg'):
+        return jsonify({"error": "Wrong format, only .jpg allowed"}), 400
 
+    try:
+        file_name = f"{parcel_id}_{uuid.uuid4()}.jpg"
+
+        s3.upload_fileobj(
+            photo,
+            BUCKET_NAME,
+            file_name,
+            ExtraArgs={"ContentType": "image/jpg"}
+        )
+	
+        file_url = f"https://{BUCKET_NAME}.s3.amazonaws.com/{file_name}"
+	
+        table.update_item(
+            Key={"parcel_id": parcel_id},
+            UpdateExpression="SET photo_url = :url",
+            ExpressionAttributeValues={
+                ":url": file_url
+            }
+        )
+
+        return jsonify({
+            "message": "Photo uploaded successfully",
+            "photo_url": file_url
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "error": "Upload failed",
+            "details": str(e)
+        }), 500
 
 if __name__ == "__main__":
      app.run(host="0.0.0.0",port=8080, threaded=True)
